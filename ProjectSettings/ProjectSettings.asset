@@ -713,10 +713,10 @@ PlayerSettings:
   apiCompatibilityLevel: 6
   activeInputHandler: 0
   windowsGamepadBackendHint: 0
-  cloudProjectId: 85eab1f1-86da-479d-8866-5c5ef9e606f3
+  cloudProjectId: 324120c5-7553-4a60-bb97-e73869becffe
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: TicTacToe
+  projectName: TicTacToe (2)
   organizationId: unity_c3e61936fccf0448ec87
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0

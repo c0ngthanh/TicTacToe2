@@ -14,6 +14,7 @@ public class GameManagerAI : MonoBehaviour
     public static GameManagerAI Instance;
     private void Awake()
     {
+        TurnNow = currentTurn.PlayerTurn;
         if(Instance!=null && Instance != this)
         {
             Destroy(gameObject);

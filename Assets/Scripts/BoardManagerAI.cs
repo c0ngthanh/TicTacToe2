@@ -7,8 +7,8 @@ using System;
 
 public class BoardManagerAI : MonoBehaviour
 {
-    private const int BoardSize = 3;
-    private const int WinningLength = 3;
+    private const int BoardSize = 7;
+    private const int WinningLength = 5;
 
     public enum Difficulty
     {
@@ -36,14 +36,15 @@ public class BoardManagerAI : MonoBehaviour
 
 
     Button[,] buttons = new Button[BoardSize, BoardSize];
-    int[,] BoardState = new int[3,3]; // init = 0, Player =1, AI =2;
+    int[,] BoardState = new int[7,7]; // init = 0, Player =1, AI =2;
     [SerializeField] private Sprite xSprite,oSprite;
     // Start is called before the first frame update
     private void Awake() {
+        Debug.Log("Awake Board AI");
         var cells = GetComponentsInChildren<Button>();
         int n=0;
-        for(int i=0;i<3;i++){
-            for (int j = 0; j< 3; j++)
+        for(int i=0;i<7;i++){
+            for (int j = 0; j< 7; j++)
             {
                 buttons[i,j] = cells[n];
                 BoardState[i,j] = 0;
@@ -72,7 +73,6 @@ public class BoardManagerAI : MonoBehaviour
     //     }
     // }
     private void OnClickCell(int r, int c){
-        // Debug.Log((r,c));
         if(GameManagerAI.TurnNow == GameManagerAI.currentTurn.PlayerTurn){
             // Debug.Log("Player");
             buttons[r,c].GetComponent<Image>().sprite = xSprite;
@@ -225,7 +225,7 @@ public class BoardManagerAI : MonoBehaviour
                     boardCopy[i, j] = 2;
                     PrintHeuristicBoard(boardCopy);
                     int moveVal = Minimax(boardCopy, 0, maxDepth, false, alpha, beta);
-                    Debug.Log(moveVal);
+                    // Debug.Log(moveVal);
                     PrintHeuristicBoard(boardCopy);
                     boardCopy[i, j] = 0;
 
@@ -352,7 +352,7 @@ public class BoardManagerAI : MonoBehaviour
             }
             output += "\n";
         }
-        Debug.Log(output);
+        // Debug.Log(output);
     }
 
     public void PrintHeuristicBoard(int[,] board)
@@ -367,54 +367,123 @@ public class BoardManagerAI : MonoBehaviour
             }
             output += "\n";
         }
-        Debug.Log(output);
+        // Debug.Log(output);
     }
 
 
     public bool IsWon(int r, int c)
     {
         Sprite clickedButtonSprite = buttons[r, c].GetComponent<Image>().sprite;
-        // Checking Column
-        if (buttons[0, c].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
-            buttons[1, c].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
-            buttons[2, c].GetComponentInChildren<Image>().sprite == clickedButtonSprite)
-        {
+        // Check Column
+        int RowCount = 0;
+        int ColumnCount = 0;
+        int LeftCount = 0;
+        int RightCount = 0;
+        for(int i = r+1;i<7;i++){
+            if(buttons[i, c].GetComponentInChildren<Image>().sprite != clickedButtonSprite){
+                break;
+            }
+            ColumnCount++;
+        }
+        for(int i = r-1;i>=0;i--){
+            if(buttons[i, c].GetComponentInChildren<Image>().sprite != clickedButtonSprite){
+                break;
+            }
+            ColumnCount++;
+        }
+        if(ColumnCount+1==5){
             return true;
         }
-
-        // Checking Row
-
-        else if (buttons[r, 0].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
-            buttons[r, 1].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
-            buttons[r, 2].GetComponentInChildren<Image>().sprite == clickedButtonSprite)
-        {
+        // Check Row
+        for(int i = c+1;i<7;i++){
+            if(buttons[r, i].GetComponentInChildren<Image>().sprite != clickedButtonSprite){
+                break;
+            }
+            RowCount++;
+        }
+        for(int i = c-1;i>=0;i--){
+            if(buttons[r, i].GetComponentInChildren<Image>().sprite != clickedButtonSprite){
+                break;
+            }
+            RowCount++;
+        }
+        if(RowCount+1==5){
             return true;
         }
-
-        // Checking First Diagonal
-
-        else if (buttons[0, 0].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
-            buttons[1, 1].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
-            buttons[2, 2].GetComponentInChildren<Image>().sprite == clickedButtonSprite)
-        {
+        // Check Left Diagonal
+        for(int i = c+1,j=r+1;i<7 && j < 7;i++,j++){
+            if(buttons[j, i].GetComponentInChildren<Image>().sprite != clickedButtonSprite){
+                break;
+            }
+            LeftCount++;
+        }
+        for(int i = c-1,j=r-1;i>=0 && j >=0;i--,j--){
+            if(buttons[j, i].GetComponentInChildren<Image>().sprite != clickedButtonSprite){
+                break;
+            }
+            LeftCount++;
+        }
+        if(LeftCount+1==5){
             return true;
         }
-
-        // Checking 2nd Diagonal
-        else if (buttons[0, 2].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
-        buttons[1, 1].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
-        buttons[2, 0].GetComponentInChildren<Image>().sprite == clickedButtonSprite)
-        {
+        for(int i = c+1,j=r-1;i<7 && j >=0;i++,j--){
+            if(buttons[j, i].GetComponentInChildren<Image>().sprite != clickedButtonSprite){
+                break;
+            }
+            RightCount++;
+        }
+        for(int i = c-1,j=r+1;i>=0 && j<7;i--,j++){
+            if(buttons[j, i].GetComponentInChildren<Image>().sprite != clickedButtonSprite){
+                break;
+            }
+            RightCount++;
+        }
+        if(RightCount+1==5){
             return true;
         }
+        // // Checking Column
+        // if (buttons[0, c].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
+        //     buttons[1, c].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
+        //     buttons[2, c].GetComponentInChildren<Image>().sprite == clickedButtonSprite)
+        // {
+        //     return true;
+        // }
+
+        // // Checking Row
+
+        // else if (buttons[r, 0].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
+        //     buttons[r, 1].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
+        //     buttons[r, 2].GetComponentInChildren<Image>().sprite == clickedButtonSprite)
+        // {
+        //     return true;
+        // }
+
+        // // Checking First Diagonal
+
+        // else if (buttons[0, 0].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
+        //     buttons[1, 1].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
+        //     buttons[2, 2].GetComponentInChildren<Image>().sprite == clickedButtonSprite)
+        // {
+        //     return true;
+        // }
+
+        // // Checking 2nd Diagonal
+        // else if (buttons[0, 2].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
+        // buttons[1, 1].GetComponentInChildren<Image>().sprite == clickedButtonSprite &&
+        // buttons[2, 0].GetComponentInChildren<Image>().sprite == clickedButtonSprite)
+        // {
+        //     return true;
+        // }
 
         return false;
     }
+
+
     private bool IsGameDraw()
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 7; i++)
         {
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < 7; j++)
             {
                 if (buttons[i, j].GetComponent<Image>().sprite != xSprite &&
                     buttons[i, j].GetComponent<Image>().sprite != oSprite)
