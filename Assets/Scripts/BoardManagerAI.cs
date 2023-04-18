@@ -7,7 +7,35 @@ using System;
 
 public class BoardManagerAI : MonoBehaviour
 {
-    Button[,] buttons = new Button[3,3];
+    private const int BoardSize = 3;
+    private const int WinningLength = 3;
+
+    public enum Difficulty
+    {
+        Easy,
+        Medium,
+        Hard
+    }
+
+    public Difficulty currentDifficulty = Difficulty.Medium;
+
+    private int GetMaxDepth()
+    {
+        switch (currentDifficulty)
+        {
+            case Difficulty.Easy:
+                return 1;
+            case Difficulty.Medium:
+                return 3;
+            case Difficulty.Hard:
+                return 5;
+            default:
+                return 3;
+        }
+    }
+
+
+    Button[,] buttons = new Button[BoardSize, BoardSize];
     int[,] BoardState = new int[3,3]; // init = 0, Player =1, AI =2;
     [SerializeField] private Sprite xSprite,oSprite;
     // Start is called before the first frame update
@@ -67,156 +95,282 @@ public class BoardManagerAI : MonoBehaviour
     private void AiTurn(){
         // int r =0,c=0;
         if(GameManagerAI.TurnNow == GameManagerAI.currentTurn.AiTurn){
+            PrintBoard();
+
             (int r, int c) = FindBestMove();
+
             // Debug.Log("AI");
             buttons[r,c].GetComponent<Image>().sprite = oSprite;
+            BoardState[r, c] = 2;
             buttons[r,c].interactable = false;
-            BoardState[r,c] = 2;
+
             // ChangSpriteClientRpc(r,c);
             if(CheckResult(r,c)){return;}
             GameManagerAI.TurnNow = GameManagerAI.currentTurn.PlayerTurn;
         }
     }
-    private int EvaluateBoard()
+
+    private bool IsMovesLeft(int[,] board)
     {
-        for (int row = 0; row < 3; row++)
-        {
-            if (BoardState[row, 0] == BoardState[row, 1] && BoardState[row, 1] == BoardState[row, 2])
-            {
-                if (BoardState[row, 0] == 1)
-                    return 10;
-                else if (BoardState[row, 0] == 2)
-                    return -10;
-            }
-        }
-
-        for (int col = 0; col < 3; col++)
-        {
-            if (BoardState[0, col] == BoardState[1, col] && BoardState[1, col] == BoardState[2, col])
-            {
-                if (BoardState[0, col] == 1)
-                    return 10;
-                else if (BoardState[0, col] == 2)
-                    return -10;
-            }
-        }
-
-        if (BoardState[0, 0] == BoardState[1, 1] && BoardState[1, 1] == BoardState[2, 2])
-        {
-            if (BoardState[0, 0] == 1)
-                return 10;
-            else if (BoardState[0, 0] == 2)
-                return -10;
-        }
-
-        if (BoardState[0, 2] == BoardState[1, 1] && BoardState[1, 1] == BoardState[2, 0])
-        {
-            if (BoardState[0, 2] == 1)
-                return 10;
-            else if (BoardState[0, 2] == 2)
-                return -10;
-        }
-
-        return 0;
-    }
-
-    private bool IsMovesLeft()
-    {
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                if (BoardState[i, j] == 0)
+        for (int i = 0; i < BoardSize; i++)
+            for (int j = 0; j < BoardSize; j++)
+                if (board[i, j] == 0)
                     return true;
         return false;
     }
 
-    private int Minimax(int depth, bool isMax, int alpha, int beta)
-{
-     int score = EvaluateHeuristic();
-
-    if (Math.Abs(score) == 2)
-        return score;
-
-    if (!IsMovesLeft())
-        return 0;
-
-    // Rest of the Minimax function remains the same
-
-    if (isMax)
+    private int Minimax(int[,] board, int depth, int maxDepth, bool isMax, int alpha, int beta)
     {
-        int best = -1000;
-
-        for (int i = 0; i < 3; i++)
+        if (depth == maxDepth)
         {
-            for (int j = 0; j < 3; j++)
-            {
-                if (BoardState[i, j] == 0)
-                {
-                    BoardState[i, j] = 2;
-                    best = Math.Max(best, Minimax(depth + 1, !isMax, alpha, beta));
-                    BoardState[i, j] = 0;
+            return EvaluateHeuristic(board);
+        }
 
-                    alpha = Math.Max(alpha, best);
-                    if (beta <= alpha)
-                        break;
+        int score = EvaluateHeuristic(board);
+        //  PrintHeuristicBoard(board);
+
+        if (Math.Abs(score) == 2)
+            return score;
+
+        if (!IsMovesLeft(board))
+            return 0;
+
+
+        if (isMax)
+        {
+            int best = -1000;
+
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (board[i, j] == 0)
+                    {
+                        board[i, j] = 2;
+                        best = Math.Max(best, Minimax(board, depth + 1, maxDepth, !isMax, alpha, beta));
+                        board[i, j] = 0;
+
+                        alpha = Math.Max(alpha, best);
+                        if (beta <= alpha)
+                        {
+                            //PrintHeuristicBoard(board);
+                            break;
+                        }
+                            
+                    }
                 }
             }
+            return best;
         }
-        return best;
-    }
-    else
-    {
-        int best = 1000;
-
-        for (int i = 0; i < 3; i++)
+        else
         {
-            for (int j = 0; j < 3; j++)
-            {
-                if (BoardState[i, j] == 0)
-                {
-                    BoardState[i, j] = 1;
-                    best = Math.Min(best, Minimax(depth + 1, !isMax, alpha, beta));
-                    BoardState[i, j] = 0;
+            int best = 1000;
 
-                    beta = Math.Min(beta, best);
-                    if (beta <= alpha)
-                        break;
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (board[i, j] == 0)
+                    {
+                        board[i, j] = 1;
+                        best = Math.Min(best, Minimax(board, depth + 1, maxDepth, !isMax, alpha, beta));
+                        board[i, j] = 0;
+
+                        beta = Math.Min(beta, best);
+                        if (beta <= alpha)
+                        {
+                            //PrintHeuristicBoard(board);
+                            break;
+                        }
+                    }
                 }
             }
+            return best;
         }
-        return best;
     }
-}
+
+    private int[,] CopyBoard(int[,] originalBoard)
+    {
+        int rows = originalBoard.GetLength(0);
+        int cols = originalBoard.GetLength(1);
+        int[,] copiedBoard = new int[rows, cols];
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                copiedBoard[i, j] = originalBoard[i, j];
+            }
+        }
+        return copiedBoard;
+    }
+
 
     private (int, int) FindBestMove()
-{
-    int bestVal = -1000;
-    int bestRow = -1;
-    int bestCol = -1;
-    int alpha = -1000;
-    int beta = 1000;
-
-    for (int i = 0; i < 3; i++)
     {
-        for (int j = 0; j < 3; j++)
-        {
-            if (BoardState[i, j] == 0)
-            {
-                BoardState[i, j] = 2;
-                int moveVal = Minimax(0, false, alpha, beta);
-                BoardState[i, j] = 0;
+        int maxDepth = GetMaxDepth();
+        
+        int[,] boardCopy = CopyBoard(BoardState);
+        int bestVal = -1000;
+        int bestRow = -1;
+        int bestCol = -1;
+        int alpha = -1000;
+        int beta = 1000;
 
-                if (moveVal > bestVal)
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                if (boardCopy[i, j] == 0)
                 {
-                    bestRow = i;
-                    bestCol = j;
-                    bestVal = moveVal;
+                    boardCopy[i, j] = 2;
+                    PrintHeuristicBoard(boardCopy);
+                    int moveVal = Minimax(boardCopy, 0, maxDepth, false, alpha, beta);
+                    Debug.Log(moveVal);
+                    PrintHeuristicBoard(boardCopy);
+                    boardCopy[i, j] = 0;
+
+                    if (moveVal > bestVal)
+                    {
+                        bestRow = i;
+                        bestCol = j;
+                        bestVal = moveVal;
+                    }
                 }
             }
         }
+
+        return (bestRow, bestCol);
     }
 
-    return (bestRow, bestCol);
-}
+    private int EvaluateHeuristic(int[,] board)
+    {
+        int score = 0;
+
+        // Evaluate rows
+        for (int row = 0; row < 3; row++)
+        {
+            int playerCount = 0;
+            int aiCount = 0;
+
+            for (int col = 0; col < 3; col++)
+            {
+                if (board[row, col] == 1)
+                    playerCount++;
+                else if (board[row, col] == 2)
+                    aiCount++;
+            }
+
+            score += EvaluateLine(playerCount, aiCount);
+        }
+
+        // Evaluate columns
+        for (int col = 0; col < 3; col++)
+        {
+            int playerCount = 0;
+            int aiCount = 0;
+
+            for (int row = 0; row < 3; row++)
+            {
+                if (board[row, col] == 1)
+                    playerCount++;
+                else if (board[row, col] == 2)
+                    aiCount++;
+            }
+
+            score += EvaluateLine(playerCount, aiCount);
+        }
+
+        // Evaluate diagonals
+        int[] playerDiagonalCounts = new int[2] { 0, 0 };
+        int[] aiDiagonalCounts = new int[2] { 0, 0 };
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (board[i, i] == 1)
+                playerDiagonalCounts[0]++;
+            else if (board[i, i] == 2)
+                aiDiagonalCounts[0]++;
+
+            if (board[i, 2 - i] == 1)
+                playerDiagonalCounts[1]++;
+            else if (board[i, 2 - i] == 2)
+                aiDiagonalCounts[1]++;
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            score += EvaluateLine(playerDiagonalCounts[i], aiDiagonalCounts[i]);
+        }
+
+        return score;
+    }
+
+    private int EvaluateLine(int playerCount, int aiCount)
+    {
+        int score = 0;
+
+        if (playerCount == 0)
+        {
+            if (aiCount == 1)
+                score += 10;
+            else if (aiCount == 2)
+                score += 100;
+            else if (aiCount == 3)
+                score += 1000;
+        }
+        else if (aiCount == 0)
+        {
+            if (playerCount == 1)
+                score -= 10;
+            else if (playerCount == 2)
+                score -= 100;
+            else if (playerCount == 3)
+                score -= 1000;
+        }
+        else if (playerCount == 1)
+        {
+            if (aiCount == 1)
+                score += 10;
+        }
+        else if (playerCount == 2)
+        {
+            if (aiCount == 1)
+                score += 100;
+        }
+        return score;
+    }
+
+
+    public void PrintBoard()
+    {
+        string output = "Board State:\n";
+        for (int i = 0; i < BoardSize; i++)
+        {
+            for (int j = 0; j < BoardSize; j++)
+            {
+                output += BoardState[i, j].ToString() + " ";
+            }
+            output += "\n";
+        }
+        Debug.Log(output);
+    }
+
+    public void PrintHeuristicBoard(int[,] board)
+    {
+        int boardSize = board.GetLength(0);
+        string output = "Board Heuristic State:\n";
+        for (int i = 0; i < boardSize; i++)
+        {
+            for (int j = 0; j < boardSize; j++)
+            {
+                output += board[i, j].ToString() + " ";
+            }
+            output += "\n";
+        }
+        Debug.Log(output);
+    }
+
+
     public bool IsWon(int r, int c)
     {
         Sprite clickedButtonSprite = buttons[r, c].GetComponent<Image>().sprite;
@@ -280,77 +434,7 @@ public class BoardManagerAI : MonoBehaviour
             }
         }
     }
-    private int EvaluateHeuristic()
-{
-    int score = 0;
-
-    // Evaluate rows
-    for (int row = 0; row < 3; row++)
-    {
-        int playerCount = 0;
-        int aiCount = 0;
-
-        for (int col = 0; col < 3; col++)
-        {
-            if (BoardState[row, col] == 1)
-                playerCount++;
-            else if (BoardState[row, col] == 2)
-                aiCount++;
-        }
-
-        if (playerCount == 0)
-            score += aiCount;
-        else if (aiCount == 0)
-            score -= playerCount;
-    }
-
-    // Evaluate columns
-    for (int col = 0; col < 3; col++)
-    {
-        int playerCount = 0;
-        int aiCount = 0;
-
-        for (int row = 0; row < 3; row++)
-        {
-            if (BoardState[row, col] == 1)
-                playerCount++;
-            else if (BoardState[row, col] == 2)
-                aiCount++;
-        }
-
-        if (playerCount == 0)
-            score += aiCount;
-        else if (aiCount == 0)
-            score -= playerCount;
-    }
-
-    // Evaluate diagonals
-    int[] playerDiagonalCounts = new int[2] { 0, 0 };
-    int[] aiDiagonalCounts = new int[2] { 0, 0 };
-
-    for (int i = 0; i < 3; i++)
-    {
-        if (BoardState[i, i] == 1)
-            playerDiagonalCounts[0]++;
-        else if (BoardState[i, i] == 2)
-            aiDiagonalCounts[0]++;
-
-        if (BoardState[i, 2 - i] == 1)
-            playerDiagonalCounts[1]++;
-        else if (BoardState[i, 2 - i] == 2)
-            aiDiagonalCounts[1]++;
-    }
-
-    for (int i = 0; i < 2; i++)
-    {
-        if (playerDiagonalCounts[i] == 0)
-            score += aiDiagonalCounts[i];
-        else if (aiDiagonalCounts[i] == 0)
-            score -= playerDiagonalCounts[i];
-    }
-
-    return score;
-}
+    
     private bool CheckResult(int r,int c){
         if(IsWon(r,c) && GameManagerAI.TurnNow == GameManagerAI.currentTurn.AiTurn){
             // Debug.Log("AI won");
