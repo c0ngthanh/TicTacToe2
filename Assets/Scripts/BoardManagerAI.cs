@@ -24,7 +24,7 @@ public class BoardManagerAI : MonoBehaviour
         switch (currentDifficulty)
         {
             case Difficulty.Easy:
-                return 1;
+                return 2;
             case Difficulty.Medium:
                 return 3;
             case Difficulty.Hard:
@@ -110,14 +110,6 @@ public class BoardManagerAI : MonoBehaviour
         }
     }
 
-    private bool IsMovesLeft(int[,] board)
-    {
-        for (int i = 0; i < BoardSize; i++)
-            for (int j = 0; j < BoardSize; j++)
-                if (board[i, j] == 0)
-                    return true;
-        return false;
-    }
 
     private int Minimax(int[,] board, int depth, int maxDepth, bool isMax, int alpha, int beta)
     {
@@ -129,7 +121,7 @@ public class BoardManagerAI : MonoBehaviour
         int score = EvaluateHeuristic(board);
         //  PrintHeuristicBoard(board);
 
-        if (Math.Abs(score) == 2)
+        if (Math.Abs(score) >= 10000)
             return score;
 
         if (!IsMovesLeft(board))
@@ -138,11 +130,11 @@ public class BoardManagerAI : MonoBehaviour
 
         if (isMax)
         {
-            int best = -1000;
+            int best = -1000000;
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < BoardSize; i++)
             {
-                for (int j = 0; j < 3; j++)
+                for (int j = 0; j < BoardSize; j++)
                 {
                     if (board[i, j] == 0)
                     {
@@ -164,11 +156,11 @@ public class BoardManagerAI : MonoBehaviour
         }
         else
         {
-            int best = 1000;
+            int best = 1000000;
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < BoardSize; i++)
             {
-                for (int j = 0; j < 3; j++)
+                for (int j = 0; j < BoardSize; j++)
                 {
                     if (board[i, j] == 0)
                     {
@@ -210,23 +202,23 @@ public class BoardManagerAI : MonoBehaviour
         int maxDepth = GetMaxDepth();
         
         int[,] boardCopy = CopyBoard(BoardState);
-        int bestVal = -1000;
+        int bestVal = -1000000;
         int bestRow = -1;
         int bestCol = -1;
-        int alpha = -1000;
-        int beta = 1000;
+        int alpha = -1000000;
+        int beta = 1000000;
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < BoardSize; i++)
         {
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < BoardSize; j++)
             {
                 if (boardCopy[i, j] == 0)
                 {
                     boardCopy[i, j] = 2;
-                    PrintHeuristicBoard(boardCopy);
+                    //PrintHeuristicBoard(boardCopy);
                     int moveVal = Minimax(boardCopy, 0, maxDepth, false, alpha, beta);
-                    // Debug.Log(moveVal);
-                    PrintHeuristicBoard(boardCopy);
+                    //Debug.Log(moveVal);
+                    //PrintHeuristicBoard(boardCopy);
                     boardCopy[i, j] = 0;
 
                     if (moveVal > bestVal)
@@ -247,60 +239,78 @@ public class BoardManagerAI : MonoBehaviour
         int score = 0;
 
         // Evaluate rows
-        for (int row = 0; row < 3; row++)
+        for (int row = 0; row < BoardSize; row++)
         {
-            int playerCount = 0;
-            int aiCount = 0;
-
-            for (int col = 0; col < 3; col++)
+            for (int col = 0; col <= BoardSize - 5; col++)
             {
-                if (board[row, col] == 1)
-                    playerCount++;
-                else if (board[row, col] == 2)
-                    aiCount++;
-            }
+                int playerCount = 0;
+                int aiCount = 0;
 
-            score += EvaluateLine(playerCount, aiCount);
+                for (int i = 0; i < 5; i++)
+                {
+                    if (board[row, col + i] == 1)
+                        playerCount++;
+                    else if (board[row, col + i] == 2)
+                        aiCount++;
+                }
+
+                score += EvaluateLine(playerCount, aiCount);
+            }
         }
 
         // Evaluate columns
-        for (int col = 0; col < 3; col++)
+        for (int col = 0; col < BoardSize; col++)
         {
-            int playerCount = 0;
-            int aiCount = 0;
-
-            for (int row = 0; row < 3; row++)
+            for (int row = 0; row <= BoardSize - 5; row++)
             {
-                if (board[row, col] == 1)
-                    playerCount++;
-                else if (board[row, col] == 2)
-                    aiCount++;
-            }
+                int playerCount = 0;
+                int aiCount = 0;
 
-            score += EvaluateLine(playerCount, aiCount);
+                for (int i = 0; i < 5; i++)
+                {
+                    if (board[row + i, col] == 1)
+                        playerCount++;
+                    else if (board[row + i, col] == 2)
+                        aiCount++;
+                }
+
+                score += EvaluateLine(playerCount, aiCount);
+            }
         }
 
         // Evaluate diagonals
-        int[] playerDiagonalCounts = new int[2] { 0, 0 };
-        int[] aiDiagonalCounts = new int[2] { 0, 0 };
-
-        for (int i = 0; i < 3; i++)
+        for (int row = 0; row <= BoardSize - 5; row++)
         {
-            if (board[i, i] == 1)
-                playerDiagonalCounts[0]++;
-            else if (board[i, i] == 2)
-                aiDiagonalCounts[0]++;
+            for (int col = 4; col < BoardSize; col++)
+            {
+                int playerCount1 = 0;
+                int aiCount1 = 0;
+                int playerCount2 = 0;
+                int aiCount2 = 0;
 
-            if (board[i, 2 - i] == 1)
-                playerDiagonalCounts[1]++;
-            else if (board[i, 2 - i] == 2)
-                aiDiagonalCounts[1]++;
+                for (int i = 0; i < 5; i++)
+                {
+                    // Main diagonal
+                    if (board[row + i, col - i] == 1)
+                        playerCount1++;
+                    else if (board[row + i, col - i] == 2)
+                        aiCount1++;
+
+                    // Anti-diagonal
+                    if (row + i < BoardSize && col + i < BoardSize)
+                    {
+                        if (board[row + i, col + i] == 1)
+                            playerCount2++;
+                        else if (board[row + i, col + i] == 2)
+                            aiCount2++;
+                    }
+                }
+
+                score += EvaluateLine(playerCount1, aiCount1);
+                score += EvaluateLine(playerCount2, aiCount2);
+            }
         }
 
-        for (int i = 0; i < 2; i++)
-        {
-            score += EvaluateLine(playerDiagonalCounts[i], aiDiagonalCounts[i]);
-        }
 
         return score;
     }
@@ -311,35 +321,118 @@ public class BoardManagerAI : MonoBehaviour
 
         if (playerCount == 0)
         {
-            if (aiCount == 1)
-                score += 10;
-            else if (aiCount == 2)
-                score += 100;
-            else if (aiCount == 3)
-                score += 1000;
+            switch (aiCount)
+            {
+                case 1:
+                    score += 10;
+                    break;
+                case 2:
+                    score += 100;
+                    break;
+                case 3:
+                    score += 1000;
+                    break;
+                case 4:
+                    score += 50000;
+                    break;
+                case 5:
+                    score += 100000;
+                    break;
+            }
         }
         else if (aiCount == 0)
         {
+            switch (playerCount)
+            {
+                case 1:
+                    score -= 20;
+                    break;
+                case 2:
+                    score -= 150;
+                    break;
+                case 3:
+                    score -= 15000;
+                    break;
+                case 4:
+                    score -= 75000;
+                    break;
+                case 5:
+                    score -= 100000;
+                    break;
+            }
+        }
+        else
+        {
+            // Mixed line situations
             if (playerCount == 1)
-                score -= 10;
+            {
+                switch (aiCount)
+                {
+                    case 1:
+                        score += 0;
+                        break;
+                    case 2:
+                        score += 80;
+                        break;
+                    case 3:
+                        score += 300;
+                        break;
+                    case 4:
+                        score += 2000;
+                        break;
+                }
+            }
             else if (playerCount == 2)
-                score -= 100;
+            {
+                switch (aiCount)
+                {
+                    case 1:
+                        score -= 100;
+                        break;
+                    case 2:
+                        score -= 50;
+                        break;
+                    case 3:
+                        score += 500;
+                        break;
+                }
+            }
             else if (playerCount == 3)
-                score -= 1000;
+            {
+                switch (aiCount)
+                {
+                    case 1:
+                        score -= 5000;
+                        break;
+                    case 2:
+                        score -= 10000;
+                        break;
+                }
+            }
+            else if (playerCount == 4)
+            {
+                switch (aiCount)
+                {
+                    case 1:
+                        score -= 20000;
+                        break;
+                }
+            }
         }
-        else if (playerCount == 1)
-        {
-            if (aiCount == 1)
-                score += 10;
-        }
-        else if (playerCount == 2)
-        {
-            if (aiCount == 1)
-                score += 100;
-        }
+
         return score;
     }
 
+
+
+    private bool IsMovesLeft(int[,] board)
+    {
+        for (int i = 0; i < BoardSize; i++)
+            for (int j = 0; j < BoardSize; j++)
+                if (board[i, j] == 0)
+                    return true;
+        return false;
+    }
 
     public void PrintBoard()
     {
@@ -352,7 +445,7 @@ public class BoardManagerAI : MonoBehaviour
             }
             output += "\n";
         }
-        // Debug.Log(output);
+        Debug.Log(output);
     }
 
     public void PrintHeuristicBoard(int[,] board)
@@ -367,7 +460,7 @@ public class BoardManagerAI : MonoBehaviour
             }
             output += "\n";
         }
-        // Debug.Log(output);
+        Debug.Log(output);
     }
 
 
@@ -481,9 +574,9 @@ public class BoardManagerAI : MonoBehaviour
 
     private bool IsGameDraw()
     {
-        for (int i = 0; i < 7; i++)
+        for (int i = 0; i < BoardSize; i++)
         {
-            for (int j = 0; j < 7; j++)
+            for (int j = 0; j < BoardSize; j++)
             {
                 if (buttons[i, j].GetComponent<Image>().sprite != xSprite &&
                     buttons[i, j].GetComponent<Image>().sprite != oSprite)
@@ -495,9 +588,9 @@ public class BoardManagerAI : MonoBehaviour
         return true;
     }
     private void TurnOffBoard(){
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < BoardSize; i++)
         {
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < BoardSize; j++)
             {
                 buttons[i,j].interactable = false;
             }
